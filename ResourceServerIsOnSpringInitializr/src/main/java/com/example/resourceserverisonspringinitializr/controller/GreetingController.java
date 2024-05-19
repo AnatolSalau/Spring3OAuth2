@@ -40,7 +40,7 @@ public class GreetingController {
 
       @GetMapping("/admin")
       //@PreAuthorize("hasAuthority('SCOPE_user.read')")
-      @PreAuthorize("hasRole('ROLE_ADMIN')")
+      @PreAuthorize("hasRole('ROLE_ROLE_ADMIN')")
       Map<String,String> sayHelloAdmin(@AuthenticationPrincipal Jwt jwt, Authentication authentication) {
             Map<String, String> result = new HashMap<>( Map.of(
                   "hello", "from sayHelloAdmin",
@@ -54,7 +54,7 @@ public class GreetingController {
 
       @GetMapping("/user")
       //@PreAuthorize("hasAuthority('SCOPE_user.read')")
-      @PreAuthorize("hasRole('ROLE_USER')")
+      @PreAuthorize("hasRole('ROLE_ROLE_USER')")
       Map<String,String> sayHelloUser(@AuthenticationPrincipal Jwt jwt, Authentication authentication) {
             Map<String, String> result = new HashMap<>( Map.of(
                   "hello", "from sayHelloUser",
