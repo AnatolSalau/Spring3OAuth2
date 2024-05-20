@@ -54,7 +54,6 @@ public class OauthConfig {
                               Set<String> roles = AuthorityUtils.authorityListToSet(context.getPrincipal().getAuthorities());
                               roles
                                     .stream()
-
                                     .map(c -> c.replaceFirst("^ROLE_", ""))
                                     .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
                               claims.put("roles", roles);
