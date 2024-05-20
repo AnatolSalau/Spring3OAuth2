@@ -4,19 +4,25 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
@@ -25,6 +31,8 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
+import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
@@ -60,13 +68,32 @@ public class SecurityConfig {
             return http.build();
       }
 
-      @Bean
+/*      @Bean
       public UserDetailsService userDetailsService() {
             var user1 = User.withUsername("user")
                   .password("password")
                   .authorities("read")
                   .build();
             return new InMemoryUserDetailsManager(user1);
+      }*/
+
+      @Bean
+      public UserDetailsService inMemoryUserDetailsManager () {
+            UserDetails admin = User
+                  .withUsername("admin")
+                  .password("admin")
+                  .roles("ADMIN")
+                  .build();
+            UserDetails user = User
+                  .withUsername("user")
+                  .password("user")
+                  .roles("USER")
+                  .build();
+            InMemoryUserDetailsManager inMemoryUserDetailsManager = new InMemoryUserDetailsManager(
+                  admin, user
+            );
+
+            return inMemoryUserDetailsManager;
       }
 
       @Bean
@@ -90,6 +117,22 @@ public class SecurityConfig {
 
             return new InMemoryRegisteredClientRepository(registeredClient);
       }*/
+
+      @Bean
+      public OAuth2TokenCustomizer<JwtEncodingContext> jwtTokenCustomizer() {
+            return (context) -> {
+                  if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())) {
+                        context.getClaims().claims((claims) -> {
+                              Set<String> roles = AuthorityUtils.authorityListToSet(context.getPrincipal().getAuthorities());
+                              roles
+                                    .stream()
+                                    .map(c -> c.replaceFirst("^ROLE_", ""))
+                                    .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
+                              claims.put("roles", roles);
+                        });
+                  }
+            };
+      }
 
       @Bean
       public AuthorizationServerSettings authorizationServerSettings() {
