@@ -2,9 +2,17 @@ package com.example.authorizationservercodeandclient.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
@@ -16,16 +24,17 @@ import java.util.stream.Collectors;
 
 @Configuration
 public class OauthConfig {
+
       @Bean
-      InMemoryUserDetailsManager inMemoryUserDetailsManager () {
-            UserDetails admin = User.withDefaultPasswordEncoder()
-                  .username("admin")
-                  .password("admin")
+      public UserDetailsService userDetailsService () {
+            UserDetails admin = User
+                  .withUsername("admin")
+                  .password("{noop}admin")
                   .roles("ADMIN")
                   .build();
-            UserDetails user = User.withDefaultPasswordEncoder()
-                  .username("user")
-                  .password("user")
+            UserDetails user = User
+                  .withUsername("user")
+                  .password("{noop}user")
                   .roles("USER")
                   .build();
             InMemoryUserDetailsManager inMemoryUserDetailsManager = new InMemoryUserDetailsManager(
@@ -33,6 +42,29 @@ public class OauthConfig {
             );
 
             return inMemoryUserDetailsManager;
+      }
+
+
+      @Bean
+      public PasswordEncoder passwordEncoder() {
+
+            return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+      }
+
+      @Bean
+      public AuthenticationManager authenticationManager(PasswordEncoder passwordEncoder, UserDetailsService userDetailsService) {
+            DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+            provider.setPasswordEncoder(passwordEncoder);
+            provider.setUserDetailsService(userDetailsService);
+            return new ProviderManager(provider);
+      }
+
+      @Bean
+      public DaoAuthenticationProvider inMemoryDaoAuthenticationProvider() {
+            DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
+            daoAuthenticationProvider.setUserDetailsService(userDetailsService());
+            daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
+            return daoAuthenticationProvider;
       }
 
       @Bean

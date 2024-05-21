@@ -12,6 +12,9 @@ import java.util.stream.Collectors;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -78,7 +81,7 @@ public class SecurityConfig {
       }*/
 
       @Bean
-      public UserDetailsService inMemoryUserDetailsManager () {
+      public UserDetailsService userDetailsService () {
             UserDetails admin = User
                   .withUsername("admin")
                   .password("admin")
@@ -96,11 +99,45 @@ public class SecurityConfig {
             return inMemoryUserDetailsManager;
       }
 
+/*      @Bean
+      public UserDetailsService userDetailsService () {
+            UserDetails admin = User.withDefaultPasswordEncoder()
+                  .username("admin")
+                  .password("admin")
+                  .roles("ADMIN")
+                  .build();
+            UserDetails user = User.withDefaultPasswordEncoder()
+                  .username("user")
+                  .password("user")
+                  .roles("USER")
+                  .build();
+            InMemoryUserDetailsManager inMemoryUserDetailsManager = new InMemoryUserDetailsManager(
+                  admin, user
+            );
+
+            return inMemoryUserDetailsManager;
+      }*/
+
       @Bean
       public PasswordEncoder passwordEncoder() {
             return NoOpPasswordEncoder.getInstance();
       }
 
+      @Bean
+      public AuthenticationManager authenticationManager(PasswordEncoder passwordEncoder, UserDetailsService userDetailsService) {
+            DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+            provider.setPasswordEncoder(passwordEncoder);
+            provider.setUserDetailsService(userDetailsService);
+            return new ProviderManager(provider);
+      }
+
+      @Bean
+      public DaoAuthenticationProvider inMemoryDaoAuthenticationProvider() {
+            DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
+            daoAuthenticationProvider.setUserDetailsService(userDetailsService());
+            daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
+            return daoAuthenticationProvider;
+      }
 
 /*      @Bean
       public RegisteredClientRepository registeredClientRepository() {
